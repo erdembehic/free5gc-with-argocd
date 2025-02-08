@@ -1,0 +1,46 @@
+---
+- name: Setup Free5GC Environment
+  hosts: workers
+  vars:
+    ansible_become_pass: 1
+  become: true
+  tasks:
+    - name: Create /root/kubedata directory
+      ansible.builtin.file:
+        path: /root/kubedata
+        state: directory
+        mode: '0755'
+
+    - name: Create /root/5gc directory
+      ansible.builtin.file:
+        path: /root/5gc
+        state: directory
+        mode: '0755'
+
+    - name: Install Multus CNI using kubectl
+      ansible.builtin.command: kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/master/deployments/multus-daemonset.yml
+      register: result
+      changed_when: "'configured' in result.stdout"
+      when: "'masters' in group_names"
+
+    - name: Copy ipvlan file to /opt/cni/bin/ipvlan
+      ansible.builtin.copy:
+        src: ipvlan
+        dest: /opt/cni/bin/ipvlan
+        mode: '0755'
+      become: true
+
+    - name: Copy macvlan file to /opt/cni/bin/macvlan
+      ansible.builtin.copy:
+        src: macvlan
+        dest: /opt/cni/bin/macvlan
+        mode: '0755'
+      become: true
+
+    - name: Copy static file to /opt/cni/bin/static
+      ansible.builtin.copy:
+        src: static
+        dest: /opt/cni/bin/static
+        mode: '0755'
+      become: true
+

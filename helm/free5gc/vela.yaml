@@ -1,0 +1,26 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: free5gc
+  namespace: default
+spec:
+  components:
+    # Helm Chart Component
+    - name: free5gc-all
+      type: helm
+      properties:
+        # Helm Chart Details
+        repoType: helm
+        url: http://192.168.230.50/repository/helm-repo/    # Helm repository URL
+        chart: free5gc                                      # Chart name
+        version: 1.1.7                                      # Chart version
+        releaseName: free5gc-1.1.7                          # Helm release name (optional)
+        values:                                             # Override Helm values
+          architecture: standalone
+          auth:
+            password: "docker"
+            username: "docker"
+        # Target Namespace for the Helm release
+        namespace: default
+
+      # Optional: Add traits (e.g., ingress, autoscaling

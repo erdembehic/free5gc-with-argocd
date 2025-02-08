@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: free5gc-local-pv
+  labels:
+    project: free5gc
+spec:
+  capacity:
+    storage: 8Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: /root/kubedata
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - k8s-worker0  # Ensure this matches the exact node name from `kubectl get nodes`
+
+---
+# add and configure this job if you edited ansible playbook with docker usage
+
+#apiVersion: batch/v1
+#kind: Job
+#metadata:
+#  name: free5gc-prep-job
+#  namespace: default
+#spec:
+#  backoffLimit: 2
+#  template:
+#    spec:
+#      containers:
+#      - name: ansible-job
+#        image: <<put docker image>>
+#        command: ["/bin/bash", "-c", "/playbooks/run_playbooks.sh ; sleep 10"]
+#      restartPolicy: Never

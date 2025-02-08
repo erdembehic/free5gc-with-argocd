@@ -1,0 +1,133 @@
+---
+- name: Setup cri-dockerd
+  hosts: workers
+  vars:
+    ansible_become_pass: 1
+  become: true
+  tasks:
+    - name: Get the latest version of cri-dockerd using uri
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/Mirantis/cri-dockerd/releases/latest
+        return_content: true
+      register: github_response
+
+    - name: Extract the tag_name
+      ansible.builtin.set_fact:
+        ver: "{{ github_response.json.tag_name | regex_replace('^v', '') }}"
+
+    - name: Ensure the destination directory exists
+      ansible.builtin.file:
+        path: /home/argela/free5gc/ansible/
+        state: directory
+        mode: '0755'
+
+    - name: Download cri-dockerd tarball
+      ansible.builtin.get_url:
+        url: "https://github.com/Mirantis/cri-dockerd/releases/download/v{{ ver }}/cri-dockerd-{{ ver }}.amd64.tgz"
+        dest: "/home/argela/free5gc/ansible/cri-dockerd-{{ ver }}.amd64.tgz"
+        mode: '0644'
+
+    - name: Extract cri-dockerd tarball
+      ansible.builtin.unarchive:
+        src: "/home/argela/free5gc/ansible/cri-dockerd-{{ ver }}.amd64.tgz"
+        creates: "home/argela/free5gc/ansible"
+        dest: "/home/argela/free5gc/ansible/cri-dockerd"
+        remote_src: true
+        force: true
+
+    - name: Move cri-dockerd binary to /usr/local/bin
+      ansible.builtin.file:
+        src: /home/argela/free5gc/ansible/cri-dockerd
+        dest: /usr/local/bin/cri-dockerd
+        state: link
+
+    - name: Verify cri-dockerd installation
+      ansible.builtin.command: cri-dockerd --version
+      register: cri_dockerd_version
+      changed_when: false
+
+    - name: Download cri-docker.service
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.service
+        dest: /etc/systemd/system/cri-docker.service
+        mode: '0644'
+
+
+    - name: Download cri-docker.socket
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.socket
+        dest: /etc/systemd/system/cri-docker.socket
+        mode: '0644'
+
+    - name: Update service file path
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/system/cri-docker.service
+        regexp: '/usr/bin/cri-dockerd'
+        line: '/usr/local/bin/cri-dockerd'
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable cri-docker service
+      ansible.builtin.systemd:
+        name: cri-docker.service
+        enabled: true
+
+    - name: Enable cri-docker socket
+      ansible.builtin.systemd:
+        name: cri-docker.socket
+        enabled: true
+
+    - name: Check status of cri-docker socket
+      ansible.builtin.systemd:
+        name: cri-docker.socket
+        state: started
+      register: cri_docker_status
+      changed_when: false
+
+    - name: Debug cri_docker_status
+      ansible.builtin.debug:
+        var: cri_docker_status
+
+    - name: Display cri-docker socket status
+      ansible.builtin.debug:
+        msg: "cri-docker.socket service state: {{ cri_docker_status.state | default('Unknown') }}"
+
+    - name: Copy ipvlan file to /opt/cni/bin/ipvlan
+      ansible.builtin.copy:
+        src: ipvlan
+        dest: /opt/cni/bin/ipvlan
+        mode: '0755'
+        become: true
+
+    - name: Copy ipvlan file to /opt/cni/bin/ipvlan
+      ansible.builtin.copy:
+        src: macvlan
+        dest: /opt/cni/bin/macvlan
+        mode: '0755'
+        become: true
+
+    - name: Copy ipvlan file to /opt/cni/bin/ipvlan
+      ansible.builtin.copy:
+        src: static
+        dest: /opt/cni/bin/static
+        mode: '0755'
+        become: true
+
+# MIRANTIS CONTAINER RUNTIME
+#  VER=$(curl -s https://api.github.com/repos/Mirantis/cri-dockerd/releases/latest|grep tag_name | cut -d '"' -f 4|sed 's/v//g')
+# echo $VER
+# wget https://github.com/Mirantis/cri-dockerd/releases/download/v${VER}/cri-dockerd-${VER}.amd64.tgz
+# tar xvf cri-dockerd-${VER}.amd64.tgz
+# mv cri-dockerd/cri-dockerd /usr/local/bin/
+# cri-dockerd --version
+# wget https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.service
+# wget https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.socket
+# mv cri-docker.socket cri-docker.service /etc/systemd/system/
+# sed -i -e 's,/usr/bin/cri-dockerd,/usr/local/bin/cri-dockerd,' /etc/systemd/system/cri-docker.service
+# systemctl daemon-reload
+# systemctl enable cri-docker.service
+# systemctl enable --now cri-docker.socket
+# systemctl status cri-docker.socket
+# ansible-playbook -i inventory.ini playbook_demo.yaml

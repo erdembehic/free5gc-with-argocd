@@ -1,0 +1,26 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: ueransim
+  namespace: default
+spec:
+  components:
+    # Helm Chart Component
+    - name: ueransim
+      type: helm
+      properties:
+        # Helm Chart Details
+        repoType: helm
+        url: http://192.168.230.50/repository/helm-repo/    # Helm repository URL
+        chart: ueransim                                      # Chart name
+        version: 2.0.17                                      # Chart version
+        releaseName: ueransim-2.0.17                         # Helm release name (optional)
+        values:                                             # Override Helm values
+          architecture: standalone
+          auth:
+            password: "docker"
+            username: "docker"
+        # Target Namespace for the Helm release
+        namespace: default
+
+      # Optional: Add traits (e.g., ingress, autoscaling

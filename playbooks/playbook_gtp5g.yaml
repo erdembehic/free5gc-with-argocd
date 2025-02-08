@@ -1,0 +1,79 @@
+---
+- name: Clone and install gtp5g
+  hosts: workers
+  become: true
+  tasks:
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Ensure gcc is installed
+      ansible.builtin.package:
+        name: gcc
+        state: present
+    - name: Ensure git is installed
+      ansible.builtin.package:
+        name: build-essential
+        state: present
+
+    - name: Check if gtp5g repository already exists
+      ansible.builtin.stat:
+        path: /home/argela/free5gc/gtp5g/.git
+      register: gtp5g_repo
+
+    - name: Remove existing gtp5g repository if it exists
+      ansible.builtin.file:
+        path: /home/argela/free5gc/gtp5g
+        state: absent
+      when: gtp5g_repo.stat.exists
+
+    - name: Create the /home/argela/free5gc directory
+      ansible.builtin.file:
+        path: /home/argela/free5gc/gtp5g
+        state: directory
+        mode: '0755'
+
+    - name: Clone the gtp5g repository at version 0.8.1
+      ansible.builtin.git:
+        repo: https://github.com/free5gc/gtp5g.git
+        dest: /home/argela/free5gc/gtp5g
+        version: v0.8.1
+        update: true
+        force: true
+
+    - name: Compile gtp5g using make
+      ansible.builtin.command:
+        cmd: make
+        chdir: /home/argela/free5gc/gtp5g
+        creates: /home/argela/free5gc/gtp5g/your_output_file
+      become: true
+      register: make_output
+
+    - name: Install gtp5g using make install
+      ansible.builtin.command:
+        cmd: make install
+        chdir: /home/argela/free5gc/gtp5g
+        creates: /usr/local/bin/gtp5g
+      become: true
+      register: make_install_output
+
+    - name: Display make install output
+      ansible.builtin.debug:
+        var: make_install_output.stdout
+
+
+    - name: Display make output
+      ansible.builtin.debug:
+        var: make_output.stdout
+
+    - name: Display make install output
+      ansible.builtin.debug:
+        var: make_install_output.stdout
+
+# apt update:,
+# apt install gcc git build-essential
+# git clone https://github.com/free5gc/gtp5g.git
+# cd gtp5g
+# make
+# make install

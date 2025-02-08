@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: free5gc-prep-job
+  namespace: default
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      containers:
+      - name: ansible-job
+        image: <<add docker image address>>
+        command: ["/bin/bash", "-c", "echo 'Job is running'; sleep 10"]
+      restartPolicy: Never
