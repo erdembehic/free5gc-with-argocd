@@ -1,0 +1,113 @@
+#Ansible task to prepare VMs for Free5GC
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: free5gc-prep
+#   namespace: default
+# spec:
+#   destination:
+#     name: ''
+#     namespace: default
+#     server: https://kubernetes.default.svc
+#   source:
+#     path: kubernetes/app
+#     repoURL: https://github.com/erdembehic/free5gc-with-argocd.git
+#     targetRevision: HEAD
+#   sources: []
+#   project: default
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+# ---
+#Free5GC UPF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: free5gc-upf
+  namespace: default
+spec:
+  destination:
+    name: ''
+    namespace: default
+    server: https://kubernetes.default.svc
+  source:
+    path: helm/free5gc/charts/free5gc-upf
+    repoURL: https://github.com/erdembehic/free5gc-with-argocd.git
+    targetRevision: HEAD
+    helm:
+      parameters:
+        - name: global.n3network.masterIf
+          value: INTERFACE_NAME
+        - name: global.n4network.masterIf
+          value: INTERFACE_NAME
+        - name: global.n6network.masterIf
+          value: INTERFACE_NAME
+        - name: global.n6network.subnetIP
+          value: 10.100.60.0
+        - name: global.n6network.gatewayIP
+          value: 10.100.60.2
+        - name: upf.n6if.ipAddress
+          value: 10.100.60.112
+  sources: []
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+# Free5GC Application
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: free5gc
+  namespace: default
+spec:
+  destination:
+    name: ''
+    namespace: default
+    server: https://kubernetes.default.svc
+  source:
+    path: helm/free5gc
+    repoURL: https://github.com/erdembehic/free5gc-with-argocd.git
+    targetRevision: HEAD
+    helm:
+      parameters:
+        - name: global.n2network.masterIf
+          value: INTERFACE_NAME
+        - name: global.n3network.masterIf
+          value: INTERFACE_NAME
+        - name: global.n4network.masterIf
+          value: INTERFACE_NAME
+        - name: global.n6network.masterIf
+          value: INTERFACE_NAME
+        - name: global.n9network.masterIf
+          value: INTERFACE_NAME
+  sources: []
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+---
+#UERANSIM Application
+project: default
+source:
+  repoURL: https://github.com/erdembehic/free5gc-with-argocd.git
+  path: helm/ueransim
+  targetRevision: HEAD
+  helm:
+    parameters:
+      - name: global.n2network.masterIf
+        value: INTERFACE_NAME
+      - name: global.n3network.masterIf
+        value: INTERFACE_NAME
+destination:
+  server: https://kubernetes.default.svc
+  namespace: default
+syncPolicy:
+  automated:
+    prune: true
+  syncOptions:
+    - Replace=true
