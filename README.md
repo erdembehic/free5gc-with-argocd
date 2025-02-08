@@ -1,7 +1,7 @@
 # Free5GC and UERANSIM Deployment Script
 
 ### Author: Behiç Erdem  
-### Date: 01.02.2025  
+
 
 This script automates the deployment of **Free5GC** and **UERANSIM** in a Kubernetes environment, utilizing **ArgoCD** and **Ansible** for configuration and orchestration.
 For detailed explanation, please refer to the [medium article](https://medium.com/@behic.erdem/0002ae1800bf).
@@ -135,10 +135,6 @@ chmod +x deploy_free5gc.sh
 
 ---
 
-## License
-This script is provided as-is under the MIT License. For more details, refer to the LICENSE file in the repository.
-
----
 
 Happy deploying! 🚀
 
