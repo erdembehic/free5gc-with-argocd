@@ -111,7 +111,9 @@ install_f5gc(){
     
     kubectl apply -f kuberntes/volumes/pv.yaml
     kubectl apply -f argocd_apps.yaml
+}
 
 
 generate_inventory_file
 prepare_vm
+install_f5gc
